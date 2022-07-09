@@ -1526,6 +1526,12 @@ class Chess {
     /* delete move numbers */
     ms = ms.replaceAll(RegExp(r'\d+\.'), '');
 
+    RegExp regExp = RegExp(r'(\([^\(\)]+\))+?');
+    var variations = regExp.allMatches(ms).toList();
+    while (variations.isNotEmpty) {
+      ms = ms.replaceAll(regExp, '');
+      variations = regExp.allMatches(ms).toList();
+    }
 
     /* trim and get array of moves */
     var moves = trim(ms).split(RegExp(r'\s+'));
