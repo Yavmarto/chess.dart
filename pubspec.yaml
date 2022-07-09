@@ -1,7 +1,7 @@
-name: chess
+name: chess2
 version: 0.7.1
-description: A port of chess.js to Dart. chess.dart is a library for legal chess move generation, maintenance of chess game state, and conversion to and from the formats FEN and PGN.
-homepage: https://github.com/davecom/chess.dart
+description: A fork chess.dart. chess.dart is a library for legal chess move generation, maintenance of chess game state, and conversion to and from the formats FEN and PGN.
+homepage: https://github.com/Yavmarto/chess.dart
 dev_dependencies:
   benchmark_harness: ^2.0.0
   test: ^1.17.8
