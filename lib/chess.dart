@@ -1533,6 +1533,9 @@ class Chess {
       variations = regExp.allMatches(ms).toList();
     }
 
+    /* delete dots from variation */
+    ms = ms.replaceAll('.', '');
+
     /* trim and get array of moves */
     var moves = trim(ms).split(RegExp(r'\s+'));
 
