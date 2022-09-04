@@ -1,4 +1,4 @@
-import 'package:chess/chess.dart';
+import 'package:chess2/chess.dart';
 
 void main() {
   final chess = Chess();
@@ -12,7 +12,7 @@ void main() {
     chess.move(move);
     print('move: ' + move);
   }
-  
+
   print(chess.ascii);
   if (chess.in_checkmate) {
     print('Checkmate');
