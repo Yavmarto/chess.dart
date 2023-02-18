@@ -1,4 +1,4 @@
-import 'package:chess2/chess.dart';
+import 'package:chess/chess.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -25,7 +25,7 @@ void main() {
 
     perfts.forEach((perft) {
       final chess = Chess();
-      chess.load(perft['fen'], true);
+      chess.load(perft['fen']);
 
       test(perft['fen'], () {
         var nodes = chess.perft(perft['depth']);
@@ -135,7 +135,7 @@ void main() {
 
     positions.forEach((position) {
       final chess = Chess();
-      chess.load(position['fen'], true);
+      chess.load(position['fen']);
 
       test(position['fen'] + ' ' + position['square'], () {
         var moves = chess.moves(
@@ -166,7 +166,7 @@ void main() {
     ];
 
     checkmates.forEach((checkmate) {
-      chess.load(checkmate, true);
+      chess.load(checkmate);
 
       test(checkmate, () {
         expect(chess.in_checkmate, isTrue);
@@ -182,7 +182,7 @@ void main() {
 
     stalemates.forEach((stalemate) {
       final chess = Chess();
-      chess.load(stalemate, true);
+      chess.load(stalemate);
 
       test(stalemate, () {
         expect(chess.in_stalemate, isTrue);
@@ -208,7 +208,7 @@ void main() {
 
     positions.forEach((position) {
       final chess = Chess();
-      chess.load(position['fen'], true);
+      chess.load(position['fen']);
 
       test(position['fen'], () {
         if (position['draw']) {
@@ -236,7 +236,7 @@ void main() {
 
     positions.forEach((position) {
       final chess = Chess();
-      chess.load(position['fen'], true);
+      chess.load(position['fen']);
 
       test(position['fen'], () {
         var passed = true;
@@ -506,7 +506,7 @@ void main() {
     positions.forEach((position) {
       final chess = Chess();
       var passed = true;
-      chess.load(position['fen'], true);
+      chess.load(position['fen']);
 
       test(position['fen'], () {
         var moves = chess.moves();
@@ -676,7 +676,7 @@ void main() {
               ' (' +
               position['should_pass'].toString() +
               ')', () {
-        chess.load(position['fen'] as String, true);
+        chess.load(position['fen'] as String);
         expect(
             (chess.fen == position['fen']) == position['should_pass'], isTrue);
       });
@@ -924,7 +924,7 @@ void main() {
     positions.forEach((position) {
       test(position['fen'], () {
         final chess = (position.containsKey('starting_position'))
-            ? Chess.fromFEN(position['starting_position'], true)
+            ? Chess.fromFEN(position['starting_position'])
             : Chess();
         var passed = true;
         var error_message = '';
@@ -1066,6 +1066,40 @@ void main() {
       });
     });
 
+    test('with variations', () {
+      var pgnWithVariations = '''
+        1. e4 c5 2. Nc3 Nc6 (2... d6 3. f4 Nc6 4. Nf3 g6 5. Bb5 Bd7 (5... Bg7) 6. O-O
+        Bg7 7. d3 a6 (7... Nf6) 8. Bxc6 Bxc6 9. Be3 Nf6 10. h3 O-O 11. Qd2; 2... e6 3.
+        Nf3 a6 (3... Nc6 4. d4 cxd4 5. Nxd4 Qc7 (5... a6; 5... d6) 6. Be2 a6 (6... Nf6)
+        7. O-O Nf6 8. Be3 Bb4 (8... Be7) 9. Na4 Be7 (9... O-O 10. Nxc6 bxc6 11. Nb6 Rb8
+        12. Nxc8 Rfxc8 (12... Qxc8 13. e5) 13. Bxa6; 9... Bd6 10. g3 b5 11. Nb6 Rb8
+        (11... Qxb6 12. Nxb5 Bc5 13. Bxc5 Qxc5 14. Nc7+) 12. Nxc8 Rxc8 13. a4) 10. Nxc6
+        bxc6 11. Nb6 Rb8 12. Nxc8 Qxc8 13. Bd4; 3... d6 4. d4 cxd4 5. Nxd4 Nf6 6. Be2
+        Be7 7. O-O O-O 8. f4 Nc6 9. Be3 Bd7 10. Nb3; 3... Nf6 4. e5 Nd5 5. Nxd5 exd5 6.
+        d4 Nc6 7. dxc5 Bxc5 8. Qxd5 Qb6 9. Bc4 Bxf2+ 10. Ke2 O-O 11. Rf1 Bc5 12. Ng5
+        Nd4+ 13. Kd1 Ne6 14. Ne4 d6 15. exd6 Rd8 16. Bd3 Bxd6 17. Nxd6 Qxd6 18. Qf5))
+        3. Nf3 e6 (3... d6 4. d4 cxd4 5. Nxd4 Nf6 6. Bg5; 3... g6; 3... e5; 3... Nf6)
+        4. d4 cxd4 5. Nxd4 Qc7 (5... a6; 5... d6) 6. Be2 a6 (6... Nf6) 7. O-O Nf6 8.
+        Be3 Bb4 (8... Be7) 9. Na4 Be7 (9... O-O 10. Nxc6 bxc6 11. Nb6 Rb8 12. Nxc8
+        Rfxc8 (12... Qxc8 13. e5) 13. Bxa6; 9... Bd6 10. g3 b5 11. Nb6 Rb8 (11... Qxb6
+        12. Nxb5 Bc5 13. Bxc5 Qxc5 14. Nc7+) 12. Nxc8 Rxc8 13. a4) 10. Nxc6 bxc6 11.
+        Nb6 Rb8 12. Nxc8 Qxc8 13. Bd4''';
+      var mainPgn =
+          '1. e4 c5 2. Nc3 Nc6 3. Nf3 e6 4. d4 cxd4 5. Nxd4 Qc7 6. Be2 a6\n'
+          '7. O-O Nf6 8. Be3 Bb4 9. Na4 Be7 10. Nxc6 bxc6 11. Nb6 Rb8\n'
+          '12. Nxc8 Qxc8 13. Bd4';
+
+      var result = chess.load_pgn(pgnWithVariations);
+      expect(result, true);
+
+      expect(
+          chess.pgn({
+            'max_width': 65,
+            'newline_char': '\n',
+          }),
+          equals(mainPgn));
+    });
+
     // special case dirty file containing a mix of \n and \r\n
     test('dirty pgn', () {
       var pgn = '[Event "Reykjavik WCh"]\n'
@@ -1135,7 +1169,7 @@ void main() {
 
     positions.forEach((position) {
       final chess = Chess();
-      chess.load(position['fen'], true);
+      chess.load(position['fen']);
       test(
           position['fen'] +
               ' (' +
@@ -1148,7 +1182,8 @@ void main() {
           expect(result, isTrue);
           expect(chess.fen, equals(position['next']));
           if (position.containsKey('captured')) {
-            // expect(chess.history.removeLast().move.captured, equals(position['captured']));
+            expect(chess.history.removeLast().move.captured,
+                equals(position['captured']));
           }
         } else {
           expect(result, isFalse);
@@ -1228,6 +1263,14 @@ void main() {
         'fen': 'rnbqkbnr/p1p1p1p1p/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
         'error_number': 10
       },
+      {'fen': '8/1p6/2k1K3/8/3K4/8/6P1/8 w - - 0 1', 'error_number': 11},
+      {'fen': '8/8/2knk3/8/8/8/5P2/8 b - - 0 1', 'error_number': 11},
+      {'fen': '8/8/2knk3/8/8/2K5/5P2/8 b - - 0 1', 'error_number': 11},
+      {'fen': '8/8/3n4/8/3k4/2K5/5P2/8 b - - 0 1', 'error_number': 12},
+      {'fen': '6p1/3k1n2/8/8/8/8/3K4/8 w - - 0 1', 'error_number': 13},
+      {'fen': '8/3k1n2/8/8/8/8/3K4/6p1 w - - 0 1', 'error_number': 13},
+      {'fen': '3k4/8/1B6/8/8/8/2K5/8 w - - 0 1', 'error_number': 14},
+      {'fen': '3k4/8/8/8/8/4n3/2K5/8 b - - 0 1', 'error_number': 14},
       {
         'fen': 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
         'error_number': 0
@@ -2499,8 +2542,8 @@ void main() {
   group('Regression Tests', () {
     // Github Issue #32 reported by AlgoTrader
     test('Issue #32 - castling flag reappearing', () {
-      final chess = Chess.fromFEN(
-          'b3k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qNP/6QK b k - 2 28', true);
+      final chess =
+          Chess.fromFEN('b3k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qNP/6QK b k - 2 28');
       chess.move({'from': 'a8', 'to': 'g2'});
       expect(chess.fen,
           equals('4k2r/5p2/4p3/1p5p/6p1/2PR2P1/BP3qbP/6QK w k - 0 29'));

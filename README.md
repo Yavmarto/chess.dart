@@ -3,9 +3,25 @@ chess.dart
 
 chess.dart is a library for legal chess move generation, maintenance of chess game state, and conversion to and from the formats FEN and PGN.  It has no external dependencies.
 
-It is a port of chess.js to Dart.  It aims to include all of the functionality in the original library, while making the API a little bit more Dart-like. In limited testing, the Dart version (after some refactoring) now outperforms the JavaScript original. 
+In 2014, chess.dart started as a port of chess.js to Dart, including all of the functionality in the original library, while making the API a little bit more Dart-like. It has since accumulated bug fixes and performance improvements thanks to contributions from the Dart community.
 
-At this early stage, it is working, and passes all of the unit tests which come with chess.js (which you can find in the *test* directory). However, beyond this, it is not tested in production.
+chess.dart includes a test suite composed of all of the original chess.js unit tests as well as newer tests specific to bug fixes and feature additions specific to the Dart version (which you can find in the *test* directory). chess.dart is depended upon by multiple popular packages for chess board display.
+
+## Installation
+
+The package is just called `chess` [on pub](https://pub.dev/packages/chess). If for some strange reason you can't use pub, you can also just add the `chess.dart` file from the `lib` directory to your project. Adding the pub package is:
+
+```shell
+ $ dart pub add chess
+```
+
+Or you can manually add `chess` to your `pubspec.yaml`.
+
+Then importing chess.dart in your code is simply:
+
+```dart
+import 'package:chess/chess.dart';
+```
 
 ## A Random Game
 
@@ -50,6 +66,7 @@ dart test/ai.dart
 ```
 
 ## Links
+- [chess on pub.dev](https://pub.dev/packages/chess)
 - [chess.js](https://github.com/jhlywa/chess.js)
 - [Wikipedia's Article on FEN Format](http://en.wikipedia.org/wiki/Forsyth–Edwards_Notation)
 - [Wikipedia's Article on PGN Format](http://en.wikipedia.org/wiki/Portable_Game_Notation)

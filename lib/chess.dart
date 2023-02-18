@@ -1,9 +1,5 @@
 library chess;
 
-import 'package:chess2/line.dart';
-import 'package:chess2/move.dart';
-import 'package:chess2/state.dart';
-
 /*  Copyright (c) 2014, David Kopec (my first name at oaksnow dot com)
  *  Released under the MIT license
  *  https://github.com/davecom/chess.dart/blob/master/LICENSE
@@ -50,11 +46,11 @@ class Chess {
   };
 
   static const Map<PieceType, List<int>> PIECE_OFFSETS = {
-    KNIGHT: [-18, -33, -31, -14,  18, 33, 31,  14],
-    BISHOP: [-17, -15,  17,  15],
-    ROOK: [-16,   1,  16,  -1],
-    QUEEN: [-17, -16, -15,   1,  17, 16, 15,  -1],
-    KING: [-17, -16, -15,   1,  17, 16, 15,  -1]
+    KNIGHT: [-18, -33, -31, -14, 18, 33, 31, 14],
+    BISHOP: [-17, -15, 17, 15],
+    ROOK: [-16, 1, 16, -1],
+    QUEEN: [-17, -16, -15, 1, 17, 16, 15, -1],
+    KING: [-17, -16, -15, 1, 17, 16, 15, -1]
   };
 
   static const List ATTACKS = [
@@ -165,19 +161,17 @@ class Chess {
   int? ep_square = EMPTY;
   int half_moves = 0;
   int move_number = 1;
-  Line mainLine = Line();
-  List<Line> variationLines = [];
-
+  List<State> history = [];
   Map header = {};
 
   /// By default start with the standard chess starting position
   Chess() {
-    load(DEFAULT_POSITION, true);
+    load(DEFAULT_POSITION);
   }
 
   /// Start with a position from a FEN
-  Chess.fromFEN(String fen, bool valid) {
-    load(fen, valid);
+  Chess.fromFEN(String fen, {bool check_validity = true}) {
+    load(fen, check_validity: check_validity);
   }
 
   /// Deep copy of the current Chess instance
@@ -190,9 +184,7 @@ class Chess {
       ..ep_square = ep_square
       ..half_moves = half_moves
       ..move_number = move_number
-      ..mainLine.history = List<State>.from(mainLine.history)
-      ..mainLine.future = List<Move>.from(mainLine.future)
-      ..variationLines = List<Line>.from(variationLines)
+      ..history = List<State>.from(history)
       ..header = Map.from(header);
   }
 
@@ -205,26 +197,24 @@ class Chess {
     ep_square = EMPTY;
     half_moves = 0;
     move_number = 1;
-    mainLine.history = [];
-    mainLine.future = [];
-    variationLines = [];
+    history = [];
     header = {};
     update_setup(generate_fen());
   }
 
   /// Go back to the chess starting position
   void reset() {
-    load(DEFAULT_POSITION, true);
+    load(DEFAULT_POSITION);
   }
 
   /// Load a position from a FEN String
-  bool load(String fen, bool valid) {
+  bool load(String fen, {bool check_validity = true}) {
     List tokens = fen.split(RegExp(r'\s+'));
     String position = tokens[0];
     var square = 0;
     //String valid = SYMBOLS + '12345678/';
 
-    if (valid) {
+    if (check_validity) {
       final validMap = validate_fen(fen);
       if (!validMap['valid']) {
         print(validMap['error']);
@@ -296,6 +286,7 @@ class Chess {
       11: '1st field (piece positions) is invalid [wrong kings counts]',
       12: '1st field (piece positions) is invalid [kings on neighbours cells]',
       13: '1st field (piece positions) is invalid [pawn(s) on first/last rank]',
+      14: 'King of opponent player is in check.',
     };
 
     /* 1st criterion: 6 space-seperated fields? */
@@ -436,6 +427,17 @@ class Chess {
       return {'valid': false, 'error_number': 13, 'error': errors[13]};
     }
 
+    /* Is king of player in turn in check (without being in checkmate) ? */
+    final board = Chess.fromFEN(fen, check_validity: false);
+    final turn = board.turn;
+    final opponentTurn = turn == Color.WHITE ? Color.BLACK : Color.WHITE;
+    final kingInChess =
+        !board.in_checkmate && board.king_attacked(opponentTurn);
+
+    if (kingInChess) {
+      return {'valid': false, 'error_number': 14, 'error': errors[14]};
+    }
+
     /* everything's okay! */
     return {'valid': true, 'error_number': 0, 'error': errors[0]};
   }
@@ -513,7 +515,7 @@ class Chess {
   /// the setup is only updated if history.length is zero, ie moves haven't been
   /// made.
   void update_setup(String fen) {
-    if (mainLine.history.isNotEmpty) return;
+    if (history.isNotEmpty) return;
 
     if (fen != DEFAULT_POSITION) {
       header['SetUp'] = '1';
@@ -732,7 +734,7 @@ class Chess {
       if (!king_attacked(us)) {
         legal_moves.add(moves[i]);
       }
-      undo_move(mainLine);
+      undo_move();
     }
 
     return legal_moves;
@@ -775,7 +777,7 @@ class Chess {
         output += '+';
       }
     }
-    undo_move(mainLine);
+    undo_move();
 
     return output;
   }
@@ -900,7 +902,7 @@ class Chess {
     var repetition = false;
 
     while (true) {
-      var move = undo_move(mainLine);
+      var move = undo_move();
       if (move == null) {
         break;
       }
@@ -927,15 +929,15 @@ class Chess {
     return repetition;
   }
 
-  void push(Move move, Line line) {
-    line.history.add(State(move, ColorMap.clone(kings), turn,
+  void push(Move move) {
+    history.add(State(move, ColorMap.clone(kings), turn,
         ColorMap.clone(castling), ep_square, half_moves, move_number));
   }
 
   void make_move(Move move) {
     final us = turn;
     final them = swap_color(us);
-    push(move, mainLine);
+    push(move);
 
     board[move.to] = board[move.from];
     board[move.from] = null;
@@ -1024,11 +1026,11 @@ class Chess {
   }
 
   /// Undoes a move and returns it, or null if move history is empty
-  Move? undo_move(Line line) {
-    if (line.history.isEmpty) {
+  Move? undo_move() {
+    if (history.isEmpty) {
       return null;
     }
-    final old = line.history.removeLast();
+    final old = history.removeLast();
 
     final move = old.move;
     kings = old.kings;
@@ -1071,8 +1073,6 @@ class Chess {
       board[castling_from] = null;
     }
 
-    // line to future
-    line.future.add(move);
     return move;
   }
 
@@ -1221,7 +1221,7 @@ class Chess {
           nodes++;
         }
       }
-      undo_move(mainLine);
+      undo_move();
     }
 
     return nodes;
@@ -1298,11 +1298,9 @@ class Chess {
   List<String?> san_moves() {
     /* pop all of history onto reversed_history */
     final reversed_history = <Move?>[];
-    while (mainLine.history.isNotEmpty) {
-      reversed_history.add(undo_move(mainLine));
+    while (history.isNotEmpty) {
+      reversed_history.add(undo_move());
     }
-
-    /// TODO get san Moves from sidelines
 
     final moves = <String?>[];
     var move_string = '';
@@ -1370,11 +1368,9 @@ class Chess {
       header_exists = true;
     }
 
-    if (header_exists && (mainLine.history.isNotEmpty)) {
+    if (header_exists && (history.isNotEmpty)) {
       result.add(newline);
     }
-
-    /// TODO add sidelines
 
     final moves = san_moves();
 
@@ -1479,7 +1475,7 @@ class Chess {
             : '\r?\n';
     //var regex = new RegExp(r'^(\[.*\]).*' + r'1\.'); //+ r"1\."); //+ mask(newline_char));
 
-    final indexOfMoveStart = pgn!.indexOf(RegExp(newline_char + r'1\.'));
+    final indexOfMoveStart = pgn!.indexOf(RegExp(newline_char + r'\d+\.{1,3}'));
 
     /* get header part of the PGN file */
     String? header_string;
@@ -1492,10 +1488,13 @@ class Chess {
       header_string = '';
     }
 
-    reset();
-
     /* parse PGN header */
     final headers = parse_pgn_header(header_string, options);
+    if (headers.containsKey('FEN')) {
+      load(headers['FEN']!);
+    } else {
+      reset();
+    }
     for (var key in headers.keys) {
       set_header([key, headers[key]]);
     }
@@ -1509,17 +1508,15 @@ class Chess {
     ms = ms.replaceAll(RegExp(r'({[^}]+\})+?'), '');
 
     /* delete move numbers */
-    ms = ms.replaceAll(RegExp(r'\d+\.'), '');
+    ms = ms.replaceAll(RegExp(r'\d+\.{1,3}'), '');
 
+    /* delete recursive annotation variations */
     RegExp regExp = RegExp(r'(\([^\(\)]+\))+?');
     var variations = regExp.allMatches(ms).toList();
     while (variations.isNotEmpty) {
       ms = ms.replaceAll(regExp, '');
       variations = regExp.allMatches(ms).toList();
     }
-
-    /* delete dots from variation */
-    ms = ms.replaceAll('.', '');
 
     /* trim and get array of moves */
     var moves = trim(ms).split(RegExp(r'\s+'));
@@ -1609,7 +1606,7 @@ class Chess {
 
   /// Takeback the last half-move, returning a move Map if successful, otherwise null.
   Map<String, dynamic>? undo() {
-    final move = undo_move(mainLine);
+    final move = undo_move();
     return (move != null) ? make_pretty(move) : null;
   }
 
@@ -1630,8 +1627,8 @@ class Chess {
         options.containsKey('verbose') &&
         options['verbose'] == true);
 
-    while (mainLine.history.isNotEmpty) {
-      reversed_history.add(undo_move(mainLine));
+    while (history.isNotEmpty) {
+      reversed_history.add(undo_move());
     }
 
     while (reversed_history.isNotEmpty) {
@@ -1697,4 +1694,36 @@ class ColorMap<T> {
       _black = value;
     }
   }
+}
+
+class Move {
+  final Color color;
+  final int from;
+  final int to;
+  final int flags;
+  final PieceType piece;
+  final PieceType? captured;
+  final PieceType? promotion;
+  const Move(this.color, this.from, this.to, this.flags, this.piece,
+      this.captured, this.promotion);
+
+  String get fromAlgebraic {
+    return Chess.algebraic(from);
+  }
+
+  String get toAlgebraic {
+    return Chess.algebraic(to);
+  }
+}
+
+class State {
+  final Move move;
+  final ColorMap<int> kings;
+  final Color turn;
+  final ColorMap<int> castling;
+  final int? ep_square;
+  final int half_moves;
+  final int move_number;
+  const State(this.move, this.kings, this.turn, this.castling, this.ep_square,
+      this.half_moves, this.move_number);
 }
