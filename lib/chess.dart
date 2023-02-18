@@ -1508,6 +1508,15 @@ class Chess {
     /* delete comments */
     ms = ms.replaceAll(RegExp(r'({[^}]+\})+?'), '');
 
+    /* Save this for variation checkout
+    * Extract all the variations in between ()
+    * use move number
+    * if number is followed by ... it's black's move, else white
+    * Store in side lines, by using Line class
+    * All moves should be stored in futures variable
+    * */
+    String variationCheck = ms;
+
     /* delete move numbers */
     ms = ms.replaceAll(RegExp(r'\d+\.{1,3}'), '');
 
@@ -1700,6 +1709,8 @@ class ColorMap<T> {
 class Line {
   List<State> history = [];
   List<Move> future = [];
+  int start = 1;
+  Color color = Color.WHITE;
 }
 
 class Move {
