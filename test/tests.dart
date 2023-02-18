@@ -1,4 +1,4 @@
-import 'package:chess/chess.dart';
+import 'package:chess2/chess.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -1182,7 +1182,7 @@ void main() {
           expect(result, isTrue);
           expect(chess.fen, equals(position['next']));
           if (position.containsKey('captured')) {
-            expect(chess.history.removeLast().move.captured,
+            expect(chess.mainLine.history.removeLast().move.captured,
                 equals(position['captured']));
           }
         } else {

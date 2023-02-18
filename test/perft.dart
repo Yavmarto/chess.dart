@@ -14,7 +14,7 @@ class PerftBenchmark extends BenchmarkBase {
   @override
   void setup() {
     chess = Chess();
-    chess!.load(fen, true);
+    chess!.load(fen, check_validity: true);
   }
 
   @override

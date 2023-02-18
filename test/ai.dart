@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chess2/chess.dart';
-import 'package:chess2/move.dart';
 
 // find the best move using simple alphaBeta
 Move? findBestMove(Chess chess) {
@@ -15,8 +14,8 @@ Move? findBestMove(Chess chess) {
 
   for (final m in chess.moves({'asObjects': true}) as Iterable<Move>) {
     chess.move(m);
-    final eval = alphaBeta(
-        Chess.fromFEN(chess.fen, true), PLY, -9999999.0, 9999999.0, toPlay);
+    final eval = alphaBeta(Chess.fromFEN(chess.fen, check_validity: true), PLY,
+        -9999999.0, 9999999.0, toPlay);
     moveEvalPairs.add([m, eval]);
     chess.undo();
   }

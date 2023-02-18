@@ -1,4 +1,4 @@
-library chess;
+library chess2;
 
 /*  Copyright (c) 2014, David Kopec (my first name at oaksnow dot com)
  *  Released under the MIT license
@@ -161,7 +161,7 @@ class Chess {
   int? ep_square = EMPTY;
   int half_moves = 0;
   int move_number = 1;
-  List<State> history = [];
+  Line mainLine = Line();
   Map header = {};
 
   /// By default start with the standard chess starting position
@@ -184,7 +184,7 @@ class Chess {
       ..ep_square = ep_square
       ..half_moves = half_moves
       ..move_number = move_number
-      ..history = List<State>.from(history)
+      ..mainLine.history = List<State>.from(mainLine.history)
       ..header = Map.from(header);
   }
 
@@ -197,7 +197,7 @@ class Chess {
     ep_square = EMPTY;
     half_moves = 0;
     move_number = 1;
-    history = [];
+    mainLine.history = [];
     header = {};
     update_setup(generate_fen());
   }
@@ -515,7 +515,7 @@ class Chess {
   /// the setup is only updated if history.length is zero, ie moves haven't been
   /// made.
   void update_setup(String fen) {
-    if (history.isNotEmpty) return;
+    if (mainLine.history.isNotEmpty) return;
 
     if (fen != DEFAULT_POSITION) {
       header['SetUp'] = '1';
@@ -930,7 +930,7 @@ class Chess {
   }
 
   void push(Move move) {
-    history.add(State(move, ColorMap.clone(kings), turn,
+    mainLine.history.add(State(move, ColorMap.clone(kings), turn,
         ColorMap.clone(castling), ep_square, half_moves, move_number));
   }
 
@@ -1026,11 +1026,12 @@ class Chess {
   }
 
   /// Undoes a move and returns it, or null if move history is empty
-  Move? undo_move() {
-    if (history.isEmpty) {
+  Move? undo_move({Line? line}) {
+    if (line == null) line = mainLine;
+    if (line.history.isEmpty) {
       return null;
     }
-    final old = history.removeLast();
+    final old = line.history.removeLast();
 
     final move = old.move;
     kings = old.kings;
@@ -1298,7 +1299,7 @@ class Chess {
   List<String?> san_moves() {
     /* pop all of history onto reversed_history */
     final reversed_history = <Move?>[];
-    while (history.isNotEmpty) {
+    while (mainLine.history.isNotEmpty) {
       reversed_history.add(undo_move());
     }
 
@@ -1368,7 +1369,7 @@ class Chess {
       header_exists = true;
     }
 
-    if (header_exists && (history.isNotEmpty)) {
+    if (header_exists && (mainLine.history.isNotEmpty)) {
       result.add(newline);
     }
 
@@ -1627,7 +1628,7 @@ class Chess {
         options.containsKey('verbose') &&
         options['verbose'] == true);
 
-    while (history.isNotEmpty) {
+    while (mainLine.history.isNotEmpty) {
       reversed_history.add(undo_move());
     }
 
@@ -1694,6 +1695,11 @@ class ColorMap<T> {
       _black = value;
     }
   }
+}
+
+class Line {
+  List<State> history = [];
+  List<Move> future = [];
 }
 
 class Move {
