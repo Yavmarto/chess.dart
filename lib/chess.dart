@@ -162,6 +162,7 @@ class Chess {
   int half_moves = 0;
   int move_number = 1;
   Line mainLine = Line();
+  Line currentLine = Line();
   Map header = {};
 
   /// By default start with the standard chess starting position
@@ -1535,6 +1536,8 @@ class Chess {
               sideMoves.join(',').replaceAll(RegExp(r',,+'), ',').split(',');
           newSideLine.import = sideMoves;
           mainLine.sideLines.add(newSideLine);
+
+          /// TODO add verification whether sideline is possible
         }
       }
     }
@@ -1581,6 +1584,7 @@ class Chess {
         make_move(moveObj);
       }
     }
+    currentLine = mainLine;
     return true;
   }
 
