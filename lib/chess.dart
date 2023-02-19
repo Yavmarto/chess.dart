@@ -1508,25 +1508,44 @@ class Chess {
     /* delete comments */
     ms = ms.replaceAll(RegExp(r'({[^}]+\})+?'), '');
 
-    /* Save this for variation checkout
-    * Extract all the variations in between ()
-    * use move number
-    * if number is followed by ... it's black's move, else white
-    * Store in side lines, by using Line class
-    * All moves should be stored in futures variable
-    * */
-    String variationCheck = ms;
-
-    /* delete move numbers */
-    ms = ms.replaceAll(RegExp(r'\d+\.{1,3}'), '');
-
     /* delete recursive annotation variations */
     RegExp regExp = RegExp(r'(\([^\(\)]+\))+?');
     var variations = regExp.allMatches(ms).toList();
+
+    for (RegExpMatch variation in variations) {
+      Line newSideLine = Line();
+      int start = variation.start;
+      int end = variation.end;
+      String input = variation.input;
+      String lineString = trim(input.substring(start + 1, end - 1));
+
+      RegExpMatch? startInt = RegExp(r'\d+\.{1,3}').firstMatch(lineString);
+
+      if (startInt != null) {
+        newSideLine.start = int.tryParse(startInt.input[startInt.start]) ?? 0;
+
+        if (newSideLine.start > 0) {
+          if (lineString.contains("...")) {
+            newSideLine.color = Color.BLACK;
+          }
+
+          lineString = lineString.replaceAll(RegExp(r'\d+\.{1,3}'), '');
+          List<String> sideMoves = trim(lineString).split(RegExp(r'\s+'));
+          sideMoves =
+              sideMoves.join(',').replaceAll(RegExp(r',,+'), ',').split(',');
+          newSideLine.import = sideMoves;
+          mainLine.sideLines.add(newSideLine);
+        }
+      }
+    }
+
     while (variations.isNotEmpty) {
       ms = ms.replaceAll(regExp, '');
       variations = regExp.allMatches(ms).toList();
     }
+
+    /* delete move numbers */
+    ms = ms.replaceAll(RegExp(r'\d+\.{1,3}'), '');
 
     /* trim and get array of moves */
     var moves = trim(ms).split(RegExp(r'\s+'));
@@ -1709,6 +1728,8 @@ class ColorMap<T> {
 class Line {
   List<State> history = [];
   List<Move> future = [];
+  List<Line> sideLines = [];
+  List<String> import = [];
   int start = 1;
   Color color = Color.WHITE;
 }
