@@ -1182,7 +1182,7 @@ void main() {
           expect(result, isTrue);
           expect(chess.fen, equals(position['next']));
           if (position.containsKey('captured')) {
-            expect(chess.mainLine.history.removeLast().move.captured,
+            expect(chess.history.removeLast().move.captured,
                 equals(position['captured']));
           }
         } else {

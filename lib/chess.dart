@@ -161,8 +161,9 @@ class Chess {
   int? ep_square = EMPTY;
   int half_moves = 0;
   int move_number = 1;
-  Line mainLine = Line();
-  Line currentLine = Line();
+  List<State> history = [];
+  List<Move> future = [];
+  List<Chess> sideLines = [];
   Map header = {};
 
   /// By default start with the standard chess starting position
@@ -185,7 +186,9 @@ class Chess {
       ..ep_square = ep_square
       ..half_moves = half_moves
       ..move_number = move_number
-      ..mainLine.history = List<State>.from(mainLine.history)
+      ..history = List<State>.from(history)
+      ..future = List<Move>.from(future)
+      ..sideLines = List<Chess>.from(sideLines)
       ..header = Map.from(header);
   }
 
@@ -198,7 +201,7 @@ class Chess {
     ep_square = EMPTY;
     half_moves = 0;
     move_number = 1;
-    mainLine.history = [];
+    history = [];
     header = {};
     update_setup(generate_fen());
   }
@@ -516,7 +519,7 @@ class Chess {
   /// the setup is only updated if history.length is zero, ie moves haven't been
   /// made.
   void update_setup(String fen) {
-    if (mainLine.history.isNotEmpty) return;
+    if (history.isNotEmpty) return;
 
     if (fen != DEFAULT_POSITION) {
       header['SetUp'] = '1';
@@ -931,7 +934,7 @@ class Chess {
   }
 
   void push(Move move) {
-    mainLine.history.add(State(move, ColorMap.clone(kings), turn,
+    history.add(State(move, ColorMap.clone(kings), turn,
         ColorMap.clone(castling), ep_square, half_moves, move_number));
   }
 
@@ -1027,12 +1030,11 @@ class Chess {
   }
 
   /// Undoes a move and returns it, or null if move history is empty
-  Move? undo_move({Line? line}) {
-    if (line == null) line = mainLine;
-    if (line.history.isEmpty) {
+  Move? undo_move() {
+    if (history.isEmpty) {
       return null;
     }
-    final old = line.history.removeLast();
+    final old = history.removeLast();
 
     final move = old.move;
     kings = old.kings;
@@ -1300,7 +1302,7 @@ class Chess {
   List<String?> san_moves() {
     /* pop all of history onto reversed_history */
     final reversed_history = <Move?>[];
-    while (mainLine.history.isNotEmpty) {
+    while (history.isNotEmpty) {
       reversed_history.add(undo_move());
     }
 
@@ -1370,7 +1372,7 @@ class Chess {
       header_exists = true;
     }
 
-    if (header_exists && (mainLine.history.isNotEmpty)) {
+    if (header_exists && (history.isNotEmpty)) {
       result.add(newline);
     }
 
@@ -1513,8 +1515,13 @@ class Chess {
     RegExp regExp = RegExp(r'(\([^\(\)]+\))+?');
     var variations = regExp.allMatches(ms).toList();
 
+    String mainLine = ms;
+    if (variations.isNotEmpty) {
+      mainLine = mainLine.replaceAll(regExp, '');
+    }
+
     for (RegExpMatch variation in variations) {
-      Line newSideLine = Line();
+      Chess newSideLine = Chess();
       int start = variation.start;
       int end = variation.end;
       String input = variation.input;
@@ -1523,28 +1530,28 @@ class Chess {
       RegExpMatch? startInt = RegExp(r'\d+\.{1,3}').firstMatch(lineString);
 
       if (startInt != null) {
-        newSideLine.start = int.tryParse(startInt.input[startInt.start]) ?? 0;
-
-        if (newSideLine.start > 0) {
-          if (lineString.contains("...")) {
-            newSideLine.color = Color.BLACK;
+        newSideLine.load_pgn(lineString);
+        if (lineString.length > 3) {
+          int end = 2;
+          // If the variations starts for black
+          if (lineString[2] == ".") {
+            end = 3;
           }
+          String startNumber = lineString.substring(0, end);
 
-          lineString = lineString.replaceAll(RegExp(r'\d+\.{1,3}'), '');
-          List<String> sideMoves = trim(lineString).split(RegExp(r'\s+'));
-          sideMoves =
-              sideMoves.join(',').replaceAll(RegExp(r',,+'), ',').split(',');
-          newSideLine.import = sideMoves;
-          mainLine.sideLines.add(newSideLine);
-
-          /// TODO add verification whether sideline is possible
+          String sideLineString = mainLine;
+          int startIndex = sideLineString.indexOf(startNumber);
+          if (startIndex > 0) {
+            sideLineString = sideLineString.substring(0, startIndex);
+            sideLineString = sideLineString + " " + lineString;
+            newSideLine.load_pgn(sideLineString);
+          }
         }
-      }
-    }
 
-    while (variations.isNotEmpty) {
-      ms = ms.replaceAll(regExp, '');
-      variations = regExp.allMatches(ms).toList();
+        sideLines.add(newSideLine);
+
+        /// TODO add verification whether sideline is possible
+      }
     }
 
     /* delete move numbers */
@@ -1584,7 +1591,6 @@ class Chess {
         make_move(moveObj);
       }
     }
-    currentLine = mainLine;
     return true;
   }
 
@@ -1660,7 +1666,7 @@ class Chess {
         options.containsKey('verbose') &&
         options['verbose'] == true);
 
-    while (mainLine.history.isNotEmpty) {
+    while (history.isNotEmpty) {
       reversed_history.add(undo_move());
     }
 
@@ -1727,15 +1733,6 @@ class ColorMap<T> {
       _black = value;
     }
   }
-}
-
-class Line {
-  List<State> history = [];
-  List<Move> future = [];
-  List<Line> sideLines = [];
-  List<String> import = [];
-  int start = 1;
-  Color color = Color.WHITE;
 }
 
 class Move {
