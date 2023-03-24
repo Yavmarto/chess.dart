@@ -166,6 +166,7 @@ class Chess {
   List<Chess> sideLines = [];
   int sidelineStart = 1;
   Color sideLineTurn = WHITE;
+  bool isMainLine = true;
   Map header = {};
 
   /// By default start with the standard chess starting position
@@ -1412,10 +1413,12 @@ class Chess {
   /// which is a string representation of a RegExp (and should not be pre-escaped)
   /// and defaults to '\r?\n').
   /// Returns [true] if the PGN was parsed successfully, otherwise [false].
-  bool load_pgn(String? pgn, int lineStart, Color colorStart, [Map? options]) {
+  bool load_pgn(String? pgn, int lineStart, Color colorStart, bool isMain,
+      [Map? options]) {
     sideLines = [];
     sidelineStart = lineStart;
     sideLineTurn = colorStart;
+    isMainLine = isMain;
     String mask(str) {
       return str.replaceAll(RegExp(r'\\'), '\\');
     }
@@ -1548,7 +1551,8 @@ class Chess {
           int index = input.indexOf(startLine);
           lineString = input.substring(0, index) + lineString;
         }
-        bool valid = newSideLine.load_pgn(lineString, newStart, newStartColor);
+        bool valid =
+            newSideLine.load_pgn(lineString, newStart, newStartColor, false);
 
         if (!valid) {
           return false;
