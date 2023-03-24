@@ -164,6 +164,8 @@ class Chess {
   List<State> history = [];
   List<Move> future = [];
   List<Chess> sideLines = [];
+  int sidelineStart = 1;
+  Color sideLineTurn = WHITE;
   Map header = {};
 
   /// By default start with the standard chess starting position
@@ -1410,7 +1412,10 @@ class Chess {
   /// which is a string representation of a RegExp (and should not be pre-escaped)
   /// and defaults to '\r?\n').
   /// Returns [true] if the PGN was parsed successfully, otherwise [false].
-  bool load_pgn(String? pgn, [Map? options]) {
+  bool load_pgn(String? pgn, int lineStart, Color colorStart, [Map? options]) {
+    sideLines = [];
+    sidelineStart = lineStart;
+    sideLineTurn = colorStart;
     String mask(str) {
       return str.replaceAll(RegExp(r'\\'), '\\');
     }
@@ -1527,38 +1532,40 @@ class Chess {
       String input = variation.input;
       String lineString = trim(input.substring(start + 1, end - 1));
 
-      RegExpMatch? startInt = RegExp(r'\d+\.{1,3}').firstMatch(lineString);
-
-      if (startInt != null) {
-        newSideLine.load_pgn(lineString);
-        if (lineString.length > 3) {
-          int end = 2;
-          // If the variations starts for black
-          if (lineString[2] == ".") {
-            end = 3;
-          }
-          String startNumber = lineString.substring(0, end);
-
-          String sideLineString = mainLine;
-          int startIndex = sideLineString.indexOf(startNumber);
-          if (startIndex > 0) {
-            sideLineString = sideLineString.substring(0, startIndex);
-            sideLineString = sideLineString + " " + lineString;
-            newSideLine.load_pgn(sideLineString);
-          }
+      int newStart = int.tryParse(lineString[0]) ?? 1;
+      Color newStartColor = WHITE;
+      if (newStart > lineStart) {
+        if (lineString[2] == ".") {
+          newStartColor = BLACK;
+          String startLine = lineString.substring(0, 2);
+          int index = input.indexOf(startLine + " ");
+          int lastIndex = input.substring(index + 3, input.length).indexOf(" ");
+          String cutStart = lineString.substring(4, lineString.length);
+          lineString = input.substring(0, lastIndex + index + 3) + cutStart;
+        } else {
+          newStartColor = WHITE;
+          String startLine = lineString.substring(0, 2);
+          int index = input.indexOf(startLine);
+          lineString = input.substring(0, index) + lineString;
         }
+        bool valid = newSideLine.load_pgn(lineString, newStart, newStartColor);
 
-        sideLines.add(newSideLine);
+        if (!valid) {
+          return false;
+        }
+        if (!sideLines.contains(newSideLine)) {
+          sideLines.add(newSideLine);
+        }
 
         /// TODO add verification whether sideline is possible
       }
     }
 
     /* delete move numbers */
-    ms = ms.replaceAll(RegExp(r'\d+\.{1,3}'), '');
+    mainLine = mainLine.replaceAll(RegExp(r'\d+\.{1,3}'), '');
 
     /* trim and get array of moves */
-    var moves = trim(ms).split(RegExp(r'\s+'));
+    var moves = trim(mainLine).split(RegExp(r'\s+'));
 
     /* delete empty entries */
     moves = moves.join(',').replaceAll(RegExp(r',,+'), ',').split(',');
