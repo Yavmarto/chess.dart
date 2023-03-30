@@ -1521,19 +1521,25 @@ class Chess {
 
     /* delete recursive annotation variations */
     RegExp regExp = RegExp(r'(\([^\(\)]+\))+?');
-    var variations = regExp.allMatches(ms).toList();
+    List<RegExpMatch> variations = regExp.allMatches(ms).toList();
 
     String mainLine = ms;
-    if (variations.isNotEmpty) {
+    List<RegExpMatch> last = variations;
+    while (variations.isNotEmpty) {
       mainLine = mainLine.replaceAll(regExp, '');
+      variations = regExp.allMatches(mainLine).toList();
+      if (variations.isNotEmpty) {
+        last = variations;
+      }
     }
 
-    for (RegExpMatch variation in variations) {
+    for (RegExpMatch variation in last) {
       Chess newSideLine = Chess();
       int start = variation.start;
-      int end = variation.end;
-      String input = variation.input;
-      String lineString = trim(input.substring(start + 1, end - 1));
+      int end = findMatchingParen(input, start);
+      String input = ms;
+
+      String lineString = trim(input.substring(start + 1, end));
 
       int newStart = int.tryParse(lineString[0]) ?? 1;
       Color newStartColor = WHITE;
@@ -1604,6 +1610,27 @@ class Chess {
     }
     return true;
   }
+
+  /// Find Matching parentheses
+  int findMatchingParen(String move, int startIndex) {
+    int depth = 1;
+
+    for (int i = startIndex + 1; i < move.length; i++) {
+      if (move[i] == "(") {
+        depth++;
+      } else if (move[i] == ")") {
+        depth--;
+
+        if (depth == 0) {
+          return i;
+        }
+      }
+    }
+
+    // This should never happen if the PGN file is well-formed
+    throw new Exception("Unmatched parentheses in move: $move");
+  }
+
 
   /// The move function can be called with in the following parameters:
   /// .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
