@@ -191,7 +191,10 @@ class Chess {
       ..move_number = move_number
       ..history = List<State>.from(history)
       ..future = List<Move>.from(future)
+      ..sidelineStart = sidelineStart
       ..sideLines = List<Chess>.from(sideLines)
+      ..sideLineTurn = sideLineTurn
+      ..isMainLine = isMainLine
       ..header = Map.from(header);
   }
 
@@ -205,6 +208,11 @@ class Chess {
     half_moves = 0;
     move_number = 1;
     history = [];
+    future = [];
+    sideLines = [];
+    sidelineStart = 1;
+    sideLineTurn = WHITE;
+    isMainLine = true;
     header = {};
     update_setup(generate_fen());
   }
