@@ -1544,8 +1544,9 @@ class Chess {
     for (RegExpMatch variation in last) {
       Chess newSideLine = Chess();
       int start = variation.start;
-      int end = findMatchingParen(input, start);
       String input = ms;
+      int end = findMatchingParen(input, start);
+
 
       String lineString = trim(input.substring(start + 1, end));
 
