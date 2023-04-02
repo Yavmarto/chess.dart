@@ -1424,8 +1424,8 @@ class Chess {
   bool load_pgn(String? pgn, int lineStart, Color colorStart, bool isMain,
       [Map? options]) {
     sideLines = [];
-    sidelineStart = lineStart;
-    sideLineTurn = colorStart;
+    // sidelineStart = lineStart;
+    // sideLineTurn = colorStart;
     isMainLine = isMain;
     String mask(str) {
       return str.replaceAll(RegExp(r'\\'), '\\');
@@ -1573,6 +1573,8 @@ class Chess {
           return false;
         }
         if (!sideLines.contains(newSideLine)) {
+        newSideLine.sidelineStart = newStart;
+        newSideLine.sideLineTurn = newStartColor;
           sideLines.add(newSideLine);
         }
 
