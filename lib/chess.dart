@@ -154,6 +154,7 @@ class Chess {
   };
 
   // Instance Variables
+  int id = -1;
   List<Piece?> board = []..length = 128;
   ColorMap<int> kings = ColorMap(EMPTY);
   Color turn = WHITE;
@@ -164,6 +165,7 @@ class Chess {
   List<State> history = [];
   List<Move> future = [];
   List<Chess> sideLines = [];
+  int parentID = -1;
   int sidelineStart = 1;
   Color sideLineTurn = WHITE;
   bool isMainLine = true;
@@ -171,7 +173,33 @@ class Chess {
 
   /// By default start with the standard chess starting position
   Chess() {
+    id = this.hashCode;
     load(DEFAULT_POSITION);
+  }
+
+  Chess? findLine(int lineID) {
+    if (id == lineID) {
+      return this;
+    }
+
+    Chess? foundLine;
+    for (Chess line in sideLines) {
+      if (line.id == lineID) {
+        foundLine = line;
+      }
+
+      foundLine = line.findLine(lineID);
+    }
+    return foundLine;
+  }
+
+  void updateLine(Chess lineToUpdate) {
+    for (Chess line in sideLines) {
+      if (line.id == lineToUpdate.id) {
+        line = lineToUpdate;
+      }
+        line.updateLine(lineToUpdate);
+    }
   }
 
   /// Start with a position from a FEN
@@ -1421,12 +1449,10 @@ class Chess {
   /// which is a string representation of a RegExp (and should not be pre-escaped)
   /// and defaults to '\r?\n').
   /// Returns [true] if the PGN was parsed successfully, otherwise [false].
-  bool load_pgn(String? pgn, int lineStart, Color colorStart, bool isMain,
-      [Map? options]) {
+  bool load_pgn({required String pgn, int lineStart = 1, Color colorStart= WHITE,
+      Map options = const {}}) {
     sideLines = [];
-    // sidelineStart = lineStart;
-    // sideLineTurn = colorStart;
-    isMainLine = isMain;
+
     String mask(str) {
       return str.replaceAll(RegExp(r'\\'), '\\');
     }
@@ -1567,14 +1593,15 @@ class Chess {
           lineString = input.substring(0, index) + lineString;
         }
         bool valid =
-            newSideLine.load_pgn(lineString, newStart, newStartColor, false);
+            newSideLine.load_pgn(pgn: lineString, lineStart: newStart, colorStart: newStartColor);
 
         if (!valid) {
           return false;
         }
         if (!sideLines.contains(newSideLine)) {
-        newSideLine.sidelineStart = newStart;
-        newSideLine.sideLineTurn = newStartColor;
+          newSideLine.sidelineStart = newStart;
+          newSideLine.sideLineTurn = newStartColor;
+          newSideLine.isMainLine = false;
           sideLines.add(newSideLine);
         }
 
@@ -1801,6 +1828,10 @@ class Move {
 
   String get toAlgebraic {
     return Chess.algebraic(to);
+  }
+
+  bool equals(Move other) {
+    return color == other.color && from == other.from && to == other.to && piece == other.piece;
   }
 }
 
