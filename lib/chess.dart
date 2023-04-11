@@ -1417,6 +1417,8 @@ class Chess {
 
     final moves = san_moves();
 
+    List<String> movesList = createMovesString(this);
+
     if (max_width == 0) {
       return result.join('') + moves.join(' ');
     }
@@ -1443,6 +1445,21 @@ class Chess {
 
     return result.join('');
   }
+
+  List<String> createMovesString(Chess chess) {
+    String movesString = chess.san_moves().join(" ");
+
+    List<Chess> reversedLines = chess.sideLines.reversed.toList();
+    List<String> allMovesList = [movesString];
+    for (Chess sideLine in reversedLines) {
+      List<String> subMoves = createMovesString(sideLine);
+
+      allMovesList.addAll(subMoves);
+    }
+
+    return allMovesList;
+  }
+  
 
   /// Load the moves of a game stored in Portable Game Notation.
   /// [options] is an optional parameter that contains a 'newline_char'
