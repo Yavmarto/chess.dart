@@ -198,7 +198,7 @@ class Chess {
       if (line.id == lineToUpdate.id) {
         line = lineToUpdate;
       }
-        line.updateLine(lineToUpdate);
+      line.updateLine(lineToUpdate);
     }
   }
 
@@ -1417,10 +1417,10 @@ class Chess {
 
     final moves = san_moves();
 
-    List<String> movesList = createMovesString(this);
-
+    List<Chess> allChesses = getAllChesses(this);
+    String movesString = createMoveString(allChesses);
     if (max_width == 0) {
-      return result.join('') + moves.join(' ');
+      return result.join('') + movesString;
     }
 
     /* wrap the PGN output at max_width */
@@ -1446,27 +1446,88 @@ class Chess {
     return result.join('');
   }
 
-  List<String> createMovesString(Chess chess) {
-    String movesString = chess.san_moves().join(" ");
+  List<Chess> getAllChesses(Chess chess) {
+    // String movesString = chess.san_moves().join(" ");
 
     List<Chess> reversedLines = chess.sideLines.reversed.toList();
-    List<String> allMovesList = [movesString];
+    List<Chess> allChesses = [chess];
     for (Chess sideLine in reversedLines) {
-      List<String> subMoves = createMovesString(sideLine);
+      List<Chess> subMoves = getAllChesses(sideLine);
 
-      allMovesList.addAll(subMoves);
+      allChesses.addAll(subMoves);
     }
 
-    return allMovesList;
+    return allChesses;
   }
-  
+
+  String createMoveString(List<Chess> allChesses) {
+    String movesString = "";
+    List<Chess> currentChesses = allChesses.reversed.toList();
+    List<List<String?>> allMovesString = [];
+    for (Chess singleChess in currentChesses) {
+      allMovesString.add(singleChess.san_moves());
+    }
+
+    for (int i = 0; i < currentChesses.length - 1; i++) {
+      Chess currentChess = currentChesses[i];
+      int start = currentChess.sidelineStart;
+      String startPoint = start.toString() + "...";
+      String currentString = " (" +
+          allMovesString[i]
+              .sublist(start - 1, allMovesString[i].length)
+              .join(" ") +
+          ") ";
+
+      if (currentChess.sideLineTurn == BLACK) {
+        // startPoint = startPoint + "..";
+      } else {
+        String moveToEdit =
+            allMovesString[i + 1][currentChess.sidelineStart - 1]!;
+        int index = findInstanceOfString(input: moveToEdit, n: 2, search: " ");
+        if (index == -1) {
+          moveToEdit = moveToEdit + " " + currentString;
+        } else {
+          moveToEdit = moveToEdit.substring(0, index) +
+              currentString +
+              startPoint +
+              moveToEdit.substring(index);
+        }
+        allMovesString[i + 1][currentChess.sidelineStart - 1] = moveToEdit;
+      }
+    }
+
+    movesString = allMovesString.last.join(" ");
+    return movesString;
+  }
+
+  int findInstanceOfString(
+      {required String input, required int n, required String search}) {
+    int count = 0;
+    int index = -1;
+
+    do {
+      index = input.indexOf(search, index + 1);
+      if (index != -1) {
+        count++;
+      }
+    } while (index != -1 && count < n);
+
+    if (count == n) {
+      return index;
+    } else {
+      return -1;
+    }
+  }
 
   /// Load the moves of a game stored in Portable Game Notation.
   /// [options] is an optional parameter that contains a 'newline_char'
   /// which is a string representation of a RegExp (and should not be pre-escaped)
   /// and defaults to '\r?\n').
   /// Returns [true] if the PGN was parsed successfully, otherwise [false].
-  bool load_pgn({required String pgn, int lineStart = 1, Color colorStart= WHITE,
+  bool load_pgn(
+      {required String pgn,
+      int lineStart = 1,
+      Color colorStart = WHITE,
       Map options = const {}}) {
     sideLines = [];
 
@@ -1590,7 +1651,6 @@ class Chess {
       String input = ms;
       int end = findMatchingParen(input, start);
 
-
       String lineString = trim(input.substring(start + 1, end));
 
       int newStart = int.tryParse(lineString[0]) ?? 1;
@@ -1609,8 +1669,8 @@ class Chess {
           int index = input.indexOf(startLine);
           lineString = input.substring(0, index) + lineString;
         }
-        bool valid =
-            newSideLine.load_pgn(pgn: lineString, lineStart: newStart, colorStart: newStartColor);
+        bool valid = newSideLine.load_pgn(
+            pgn: lineString, lineStart: newStart, colorStart: newStartColor);
 
         if (!valid) {
           return false;
@@ -1685,7 +1745,6 @@ class Chess {
     // This should never happen if the PGN file is well-formed
     throw new Exception("Unmatched parentheses in move: $move");
   }
-
 
   /// The move function can be called with in the following parameters:
   /// .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
@@ -1848,7 +1907,10 @@ class Move {
   }
 
   bool equals(Move other) {
-    return color == other.color && from == other.from && to == other.to && piece == other.piece;
+    return color == other.color &&
+        from == other.from &&
+        to == other.to &&
+        piece == other.piece;
   }
 }
 
