@@ -1477,12 +1477,21 @@ class Chess {
               .sublist(start - 1, allMovesString[i].length)
               .join(" ") +
           ") ";
-
+      String moveToEdit =
+      allMovesString[i + 1][currentChess.sidelineStart - 1]!;
       if (currentChess.sideLineTurn == BLACK) {
-        // startPoint = startPoint + "..";
+        int index = findInstanceOfString(input: currentString, n: 3, search: " ");
+
+        if (index == -1) {
+          print("No Idea");
+        } else {
+          currentString =  " (" + startPoint+" " + currentString.substring(index);
+
+        }
+
+        moveToEdit = moveToEdit + " " + currentString;
       } else {
-        String moveToEdit =
-            allMovesString[i + 1][currentChess.sidelineStart - 1]!;
+
         int index = findInstanceOfString(input: moveToEdit, n: 2, search: " ");
         if (index == -1) {
           moveToEdit = moveToEdit + " " + currentString;
@@ -1492,8 +1501,9 @@ class Chess {
               startPoint +
               moveToEdit.substring(index);
         }
-        allMovesString[i + 1][currentChess.sidelineStart - 1] = moveToEdit;
+
       }
+      allMovesString[i + 1][currentChess.sidelineStart - 1] = moveToEdit;
     }
 
     movesString = allMovesString.last.join(" ");
@@ -1655,7 +1665,7 @@ class Chess {
 
       int newStart = int.tryParse(lineString[0]) ?? 1;
       Color newStartColor = WHITE;
-      if (newStart > lineStart) {
+      if (newStart >= lineStart) {
         if (lineString[2] == ".") {
           newStartColor = BLACK;
           String startLine = lineString.substring(0, 2);
