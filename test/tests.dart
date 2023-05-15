@@ -1124,7 +1124,7 @@ void main() {
           '32. Qe5 Qe8 33. a4 Qd8 34. R1f2 Qe8 35. R2f3 Qd8 36. Bd3 Qe8\n'
           '37. Qe4 Nf6 38. Rxf6 gxf6 39. Rxf6 Kg8 40. Bc4 Kh8 41. Qf4 1-0\n';
 
-      var result = chess.load_pgn(pgn, {'newline_char': '\r?\n'});
+      var result = chess.load_pgn({'newline_char': '\r?\n'}, pgn: 'pgn');
       expect(result, isNotNull);
 
       expect(chess.load_pgn(pgn), isNotNull);

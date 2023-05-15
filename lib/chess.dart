@@ -193,6 +193,53 @@ class Chess {
     return foundLine;
   }
 
+  List<Arrow> arrows = [];
+  List<Arrow> arrowHistory = [];
+  List<Arrow> arrowFuture = [];
+
+  void addArrow(String color, String from, String to) {
+    var arrow = Arrow(color, from, to);
+    arrows.add(arrow);
+    arrowHistory.add(arrow);
+    arrowFuture.clear();
+  }
+
+  void removeArrow(Arrow? arrow) {
+    if (arrow != null && arrows.contains(arrow)) {
+      arrows.remove(arrow);
+    }
+  }
+
+  void removeAllArrows() {
+    arrowHistory.addAll(arrows);
+    arrows.clear();
+    arrowFuture.clear();
+  }
+
+  void removeLastArrow() {
+    if (arrows.isNotEmpty) {
+      var arrow = arrows.removeLast();
+      arrowHistory.add(arrow);
+      arrowFuture.clear();
+    }
+  }
+
+  void undoArrow() {
+    if (arrowHistory.isNotEmpty) {
+      var arrow = arrowHistory.removeLast();
+      arrows.remove(arrow);
+      arrowFuture.add(arrow);
+    }
+  }
+
+  void redoArrow() {
+    if (arrowFuture.isNotEmpty) {
+      var arrow = arrowFuture.removeLast();
+      arrows.add(arrow);
+      arrowHistory.add(arrow);
+    }
+  }
+
   void updateLine(Chess lineToUpdate) {
     for (Chess line in sideLines) {
       if (line.id == lineToUpdate.id) {
@@ -1119,6 +1166,25 @@ class Chess {
     return move;
   }
 
+  void redo() {
+    if (future.isNotEmpty) {
+      var move = future.removeLast();
+      make_move(move);
+    }
+  }
+
+  void jumpToMove(int moveNumber, Color color) {
+    while (move_number != moveNumber || turn != color) {
+      if (move_number > moveNumber ||
+          (move_number == moveNumber && turn != color)) {
+        undo_move();
+      } else if (move_number < moveNumber ||
+          (move_number == moveNumber && turn != color)) {
+        redo();
+      }
+    }
+  }
+
   /* this function is used to uniquely identify ambiguous moves */
   String get_disambiguator(Move move) {
     var moves = generate_moves();
@@ -1478,20 +1544,20 @@ class Chess {
               .join(" ") +
           ") ";
       String moveToEdit =
-      allMovesString[i + 1][currentChess.sidelineStart - 1]!;
+          allMovesString[i + 1][currentChess.sidelineStart - 1]!;
       if (currentChess.sideLineTurn == BLACK) {
-        int index = findInstanceOfString(input: currentString, n: 3, search: " ");
+        int index =
+            findInstanceOfString(input: currentString, n: 3, search: " ");
 
         if (index == -1) {
           print("No Idea");
         } else {
-          currentString =  " (" + startPoint+" " + currentString.substring(index);
-
+          currentString =
+              " (" + startPoint + " " + currentString.substring(index);
         }
 
         moveToEdit = moveToEdit + " " + currentString;
       } else {
-
         int index = findInstanceOfString(input: moveToEdit, n: 2, search: " ");
         if (index == -1) {
           moveToEdit = moveToEdit + " " + currentString;
@@ -1501,7 +1567,6 @@ class Chess {
               startPoint +
               moveToEdit.substring(index);
         }
-
       }
       allMovesString[i + 1][currentChess.sidelineStart - 1] = moveToEdit;
     }
@@ -1934,4 +1999,12 @@ class State {
   final int move_number;
   const State(this.move, this.kings, this.turn, this.castling, this.ep_square,
       this.half_moves, this.move_number);
+}
+
+class Arrow {
+  String color;
+  String from;
+  String to;
+
+  Arrow(this.color, this.from, this.to);
 }
