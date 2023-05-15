@@ -1177,7 +1177,7 @@ class Chess {
     while (move_number != moveNumber || turn != color) {
       if (move_number > moveNumber ||
           (move_number == moveNumber && turn != color)) {
-        undo_move();
+        undo();
       } else if (move_number < moveNumber ||
           (move_number == moveNumber && turn != color)) {
         redo();
